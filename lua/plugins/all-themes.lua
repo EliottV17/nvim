@@ -122,4 +122,14 @@ return {
 		lazy = true,
 		priority = 1000,
 	},
+	{
+		"datsfilipe/vesper.nvim",
+		lazy = true,
+		priority = 1000,
+	},
+	{
+		"vague2k/vague.nvim",
+		lazy = true,
+		priority = 1000,
+	},
 }
