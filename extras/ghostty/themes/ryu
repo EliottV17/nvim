@@ -1,0 +1,22 @@
+# Ryu — generated from lua/themes/ryu.lua
+background = #050505
+foreground = #D6D0C5
+cursor-color = #D6D0C5
+selection-background = #1e1e1e
+selection-foreground = #D6D0C5
+palette = 0=#1e1e1e
+palette = 1=#da614e
+palette = 2=#8B9388
+palette = 3=#51605b
+palette = 4=#75897F
+palette = 5=#C2A46D
+palette = 6=#717C7C
+palette = 7=#a19c94
+palette = 8=#404040
+palette = 9=#df6124
+palette = 10=#525e5a
+palette = 11=#8B9388
+palette = 12=#75897F
+palette = 13=#C2A46D
+palette = 14=#52565e
+palette = 15=#e0dcd4

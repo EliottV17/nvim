@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# Switch the Neovim theme and the matching Ghostty terminal theme together.
+#
+# Usage:
+#   theme            List available themes and show the current one
+#   theme <name>     Activate <name> in Neovim and Ghostty
+set -euo pipefail
+
+NVIM_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+THEMES_DIR="$NVIM_DIR/lua/themes"
+TARGET="$NVIM_DIR/lua/plugins/theme.lua"
+GHOSTTY_THEMES_DIR="$NVIM_DIR/extras/ghostty/themes"
+GHOSTTY_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty"
+
+# Ghostty 1.2+ reads config.ghostty; older installs use config.
+if [[ -f "$GHOSTTY_DIR/config" && ! -f "$GHOSTTY_DIR/config.ghostty" ]]; then
+  GHOSTTY_CONFIG="$GHOSTTY_DIR/config"
+else
+  GHOSTTY_CONFIG="$GHOSTTY_DIR/config.ghostty"
+fi
+
+# Built-in Ghostty themes that match a Neovim theme. Anything not listed here
+# must have a custom theme file in extras/ghostty/themes/<name>.
+ghostty_theme_for() {
+  case "$1" in
+    kanagawa-dragon) echo "Kanagawa Dragon" ;;
+    kanso) echo "Kanso Zen" ;;
+    *)
+      if [[ -f "$GHOSTTY_THEMES_DIR/$1" ]]; then
+        echo "$GHOSTTY_THEMES_DIR/$1"
+      fi
+      ;;
+  esac
+}
+
+list_themes() {
+  local current=""
+  if [[ -f "$TARGET" && ! -L "$TARGET" ]]; then
+    for f in "$THEMES_DIR"/*.lua; do
+      if cmp -s "$f" "$TARGET"; then
+        current="$(basename "$f" .lua)"
+        break
+      fi
+    done
+  fi
+
+  echo "Available themes:"
+  for f in "$THEMES_DIR"/*.lua; do
+    local name
+    name="$(basename "$f" .lua)"
+    if [[ "$name" == "$current" ]]; then
+      echo "  * $name (current)"
+    else
+      echo "    $name"
+    fi
+  done
+
+  if [[ -f "$GHOSTTY_CONFIG" ]]; then
+    local line
+    line="$(grep -E '^[[:space:]]*theme[[:space:]]*=' "$GHOSTTY_CONFIG" || true)"
+    echo
+    echo "Ghostty: ${line:-no theme set}"
+  fi
+}
+
+set_ghostty_theme() {
+  local value="$1"
+  mkdir -p "$GHOSTTY_DIR"
+  touch "$GHOSTTY_CONFIG"
+  if grep -qE '^[[:space:]]*theme[[:space:]]*=' "$GHOSTTY_CONFIG"; then
+    local tmp
+    tmp="$(mktemp)"
+    awk -v v="$value" '
+      /^[[:space:]]*theme[[:space:]]*=/ { print "theme = " v; next }
+      { print }
+    ' "$GHOSTTY_CONFIG" >"$tmp"
+    cat "$tmp" >"$GHOSTTY_CONFIG"
+    rm -f "$tmp"
+  else
+    printf 'theme = %s\n' "$value" >>"$GHOSTTY_CONFIG"
+  fi
+}
+
+main() {
+  if [[ $# -eq 0 ]]; then
+    list_themes
+    return 0
+  fi
+
+  local name="$1"
+  local source="$THEMES_DIR/$name.lua"
+  if [[ ! -f "$source" ]]; then
+    echo "theme: unknown theme '$name'" >&2
+    echo >&2
+    list_themes >&2
+    return 1
+  fi
+
+  local ghostty_theme
+  ghostty_theme="$(ghostty_theme_for "$name")"
+  if [[ -z "$ghostty_theme" ]]; then
+    echo "theme: no Ghostty theme mapped for '$name'" >&2
+    return 1
+  fi
+
+  # Replace a leftover symlink (e.g. from Omarchy) with a regular file.
+  rm -f "$TARGET"
+  cp "$source" "$TARGET"
+  set_ghostty_theme "$ghostty_theme"
+
+  echo "Neovim  -> $name"
+  echo "Ghostty -> $ghostty_theme"
+  echo
+  echo "Reload Ghostty with ctrl+shift+, and restart Neovim."
+}
+
+main "$@"

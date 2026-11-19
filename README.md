@@ -7,6 +7,8 @@ Configuración personalizada de **Neovim** basada en [LazyVim](https://github.co
 ## 📁 Estructura del Proyecto
 
 * **`init.lua`**: Punto de entrada de Neovim.
+* **`bin/theme`**: Script que cambia el tema de Neovim y de Ghostty en un solo paso (ver [Gestión de Temas](#-gestión-de-temas-omarchy-vs-standalone)).
+* **`extras/ghostty/themes/`**: Temas de Ghostty generados con las mismas paletas que `lua/themes/` (Ash, Last Horizon, Ryu, Solitude).
 * **`lazy-lock.json`**: Versiones fijadas (commit hashes) de todos los plugins para garantizar una instalación 100% reproducible en cualquier máquina.
 * **`lazyvim.json`**: Extras activos de LazyVim.
 * **`lua/config/`**:
@@ -19,7 +21,7 @@ Configuración personalizada de **Neovim** basada en [LazyVim](https://github.co
   * Plugins específicos, ajustes de UI, transparencia (`lualine-transparent.lua`, `markdown.lua`, etc.).
   * `all-themes.lua`: Predeclaración de paletas para cambio rápido sin clonación en tiempo de ejecución.
   * `omarchy-theme-hotreload.lua`: Recarga en caliente del tema visual al cambiar de tema en Omarchy.
-  * `theme.lua`: Enlace o definición del tema activo.
+  * `theme.lua`: Tema activo. Es una copia de una receta de `lua/themes/` (lo escribe `bin/theme`); en Omarchy se reemplaza por un enlace.
 * **`lua/themes/`**: Recetas portables e independientes de tus 6 temas favoritos:
   * `ryu.lua`: Paleta Aether personalizada con cursorline y detalles en naranja/oscuro.
   * `solitude.lua`: Paleta Ashen (`ashen.nvim`).
@@ -52,13 +54,17 @@ sudo dnf install -y neovim git gcc ripgrep fd-find make unzip
 
 *(Opcional: tener `node` / `npm` o `python` si utilizás servidores LSP que dependen de esos entornos).*
 
+### Terminal (opcional, recomendado):
+* [Ghostty](https://ghostty.org) >= 1.2 (usa `~/.config/ghostty/config.ghostty`) para que la terminal comparta el tema con Neovim.
+* `~/.local/bin` en tu `PATH` para poder ejecutar el comando `theme`.
+
 ---
 
 ## 🚀 Restauración Paso a Paso
 
 1. **Clonar este repositorio en la ruta estándar de configuración:**
    ```bash
-   git clone <URL_DE_TU_REPOSITORIO> ~/.config/nvim
+   git clone https://github.com/EliottV17/nvim.git ~/.config/nvim
    ```
 
 2. **Abrir Neovim por primera vez:**
@@ -76,6 +82,14 @@ sudo dnf install -y neovim git gcc ripgrep fd-find make unzip
    ```
    Esto te indicará si falta alguna herramienta externa del sistema (como `xclip`/`wl-copy`, linters o compiladores).
 
+4. **Instalar el comando `theme` y sincronizar la terminal (sin Omarchy):**
+   ```bash
+   mkdir -p ~/.local/bin
+   ln -s ~/.config/nvim/bin/theme ~/.local/bin/theme
+   theme kanagawa-dragon   # o el tema que prefieras
+   ```
+   Recargá Ghostty con `ctrl+shift+,` y reiniciá Neovim. Si `~/.config/ghostty/config.ghostty` no existe, el script lo crea.
+
 ---
 
 ## 🎨 Gestión de Temas (Omarchy vs. Standalone)
@@ -83,30 +97,38 @@ sudo dnf install -y neovim git gcc ripgrep fd-find make unzip
 Esta configuración está diseñada para funcionar en dos modalidades:
 
 ### 1. En sistemas con Omarchy
-No tenés que hacer nada. `theme.lua` se enlaza con el estado de Omarchy y, cuando ejecutás `omarchy theme set <nombre>`, Neovim actualiza los colores instantáneamente sin reiniciar el editor.
-
-### 2. En máquinas independientes (sin Omarchy)
-Si estás en una laptop o servidor sin Omarchy, podés activar cualquiera de los 6 temas incluidos reemplazando `theme.lua` con la receta correspondiente:
+El repositorio guarda `theme.lua` como archivo normal (el tema standalone activo). En Omarchy, reemplazalo una vez por el enlace al estado de Omarchy:
 
 ```bash
-# Ejemplo para activar Ryu:
-cp ~/.config/nvim/lua/themes/ryu.lua ~/.config/nvim/lua/plugins/theme.lua
-
-# Ejemplo para activar Solitude:
-cp ~/.config/nvim/lua/themes/solitude.lua ~/.config/nvim/lua/plugins/theme.lua
-
-# Ejemplo para activar Kanagawa Dragon:
-cp ~/.config/nvim/lua/themes/kanagawa-dragon.lua ~/.config/nvim/lua/plugins/theme.lua
-
-# Ejemplo para activar Kanso:
-cp ~/.config/nvim/lua/themes/kanso.lua ~/.config/nvim/lua/plugins/theme.lua
-
-# Ejemplo para activar Ash:
-cp ~/.config/nvim/lua/themes/ash.lua ~/.config/nvim/lua/plugins/theme.lua
-
-# Ejemplo para activar Last Horizon:
-cp ~/.config/nvim/lua/themes/last-horizon.lua ~/.config/nvim/lua/plugins/theme.lua
+ln -sf ~/.local/state/omarchy/current/theme/neovim.lua ~/.config/nvim/lua/plugins/theme.lua
 ```
+
+Desde ahí, cuando ejecutás `omarchy theme set <nombre>`, Neovim actualiza los colores instantáneamente sin reiniciar el editor. No uses `bin/theme` en Omarchy: Omarchy ya gestiona el tema de la terminal. Para no subir ese enlace al repo, ejecutá `git update-index --assume-unchanged lua/plugins/theme.lua`.
+
+### 2. En máquinas independientes (sin Omarchy)
+Si estás en una laptop o servidor sin Omarchy, usá el script `bin/theme`. Cambia el tema de Neovim y el de Ghostty (y por lo tanto el de zsh) en un solo paso.
+
+Instalación (una sola vez):
+
+```bash
+ln -s ~/.config/nvim/bin/theme ~/.local/bin/theme
+```
+
+Uso:
+
+```bash
+theme              # lista los temas y muestra el actual
+theme ryu          # activa Ryu en Neovim y Ghostty
+theme kanagawa-dragon
+```
+
+Después recargá Ghostty con `ctrl+shift+,` y reiniciá Neovim. Las demás opciones de `config.ghostty` se conservan; solo se reemplaza la línea `theme =`.
+
+El script copia `lua/themes/<nombre>.lua` a `lua/plugins/theme.lua` y escribe la línea `theme = ...` en `~/.config/ghostty/config.ghostty`. Kanagawa Dragon y Kanso usan los temas que trae Ghostty; Ash, Last Horizon, Ryu y Solitude usan los archivos de `extras/ghostty/themes/`, generados con las mismas paletas que sus recetas de Neovim. zsh (o cualquier shell) toma los colores de la paleta de Ghostty, así que también cambia.
+
+Cada cambio de tema modifica `lua/plugins/theme.lua`; hacé commit si querés que la próxima máquina arranque con ese tema.
+
+**Agregar un tema nuevo:** creá `lua/themes/<nombre>.lua` y, si Ghostty no trae uno equivalente, `extras/ghostty/themes/<nombre>` (formato de config de Ghostty: `background`, `foreground`, `palette = 0..15`). Si Ghostty sí lo trae (`ghostty +list-themes`), agregá el mapeo en `ghostty_theme_for()` dentro de `bin/theme`.
 
 ---
 
