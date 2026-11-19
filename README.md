@@ -7,7 +7,7 @@ Configuración personalizada de **Neovim** basada en [LazyVim](https://github.co
 ## 📁 Estructura del Proyecto
 
 * **`init.lua`**: Punto de entrada de Neovim.
-* **`bin/theme`**: Script que cambia el tema de Neovim y de Ghostty en un solo paso (ver [Gestión de Temas](#-gestión-de-temas-omarchy-vs-standalone)).
+* **`bin/theme`**: Script que cambia el tema de Neovim, Ghostty y las apps GTK4/libadwaita (Nautilus) en un solo paso (ver [Gestión de Temas](#-gestión-de-temas-omarchy-vs-standalone)).
 * **`extras/ghostty/themes/`**: Temas de Ghostty generados con las mismas paletas que `lua/themes/` (Ash, Last Horizon, Ryu, Solitude).
 * **`lazy-lock.json`**: Versiones fijadas (commit hashes) de todos los plugins para garantizar una instalación 100% reproducible en cualquier máquina.
 * **`lazyvim.json`**: Extras activos de LazyVim.
@@ -22,13 +22,17 @@ Configuración personalizada de **Neovim** basada en [LazyVim](https://github.co
   * `all-themes.lua`: Predeclaración de paletas para cambio rápido sin clonación en tiempo de ejecución.
   * `omarchy-theme-hotreload.lua`: Recarga en caliente del tema visual al cambiar de tema en Omarchy.
   * `theme.lua`: Tema activo. Es una copia de una receta de `lua/themes/` (lo escribe `bin/theme`); en Omarchy se reemplaza por un enlace.
-* **`lua/themes/`**: Recetas portables e independientes de tus 6 temas favoritos:
+* **`lua/themes/`**: Recetas portables e independientes de tus 10 temas favoritos:
   * `ryu.lua`: Paleta Aether personalizada con cursorline y detalles en naranja/oscuro.
   * `solitude.lua`: Paleta Ashen (`ashen.nvim`).
   * `kanagawa-dragon.lua`: Paleta Dragon (`kanagawa.nvim`).
   * `kanso.lua`: Paleta Kanso Zen (`kanso.nvim`).
   * `ash.lua`: Paleta minimalista monocromática Aether.
   * `last-horizon.lua`: Paleta sutil y oscura Aether.
+  * `vesper.lua`: Casi monocromático con acentos naranja y menta (`vesper.nvim`).
+  * `matte-black.lua`: Tema oficial de Omarchy, negro mate con acentos naranja (`matteblack.nvim`).
+  * `vague.lua`: Colores apagados y desaturados (`vague.nvim`).
+  * `miasma.lua`: Tonos tierra, verdes y marrones (`miasma.nvim`).
 * **`plugin/after/transparency.lua`**: Reglas globales de transparencia para buffers y ventanas flotantes.
 
 ---
@@ -88,7 +92,7 @@ sudo dnf install -y neovim git gcc ripgrep fd-find make unzip
    ln -s ~/.config/nvim/bin/theme ~/.local/bin/theme
    theme kanagawa-dragon   # o el tema que prefieras
    ```
-   Recargá Ghostty con `ctrl+shift+,` y reiniciá Neovim. Si `~/.config/ghostty/config.ghostty` no existe, el script lo crea.
+   Ghostty se recarga solo; reiniciá Neovim. Si `~/.config/ghostty/config.ghostty` no existe, el script lo crea. También genera `~/.config/gtk-4.0/gtk.css` para que Nautilus use los mismos colores.
 
 ---
 
@@ -106,7 +110,7 @@ ln -sf ~/.local/state/omarchy/current/theme/neovim.lua ~/.config/nvim/lua/plugin
 Desde ahí, cuando ejecutás `omarchy theme set <nombre>`, Neovim actualiza los colores instantáneamente sin reiniciar el editor. No uses `bin/theme` en Omarchy: Omarchy ya gestiona el tema de la terminal. Para no subir ese enlace al repo, ejecutá `git update-index --assume-unchanged lua/plugins/theme.lua`.
 
 ### 2. En máquinas independientes (sin Omarchy)
-Si estás en una laptop o servidor sin Omarchy, usá el script `bin/theme`. Cambia el tema de Neovim y el de Ghostty (y por lo tanto el de zsh) en un solo paso.
+Si estás en una laptop o servidor sin Omarchy, usá el script `bin/theme`. Cambia el tema de Neovim, el de Ghostty (y por lo tanto el de zsh) y los colores de Nautilus y demás apps GTK4/libadwaita en un solo paso.
 
 Instalación (una sola vez):
 
@@ -122,9 +126,11 @@ theme ryu          # activa Ryu en Neovim y Ghostty
 theme kanagawa-dragon
 ```
 
-Después recargá Ghostty con `ctrl+shift+,` y reiniciá Neovim. Las demás opciones de `config.ghostty` se conservan; solo se reemplaza la línea `theme =`.
+Ghostty se recarga solo (el script le envía `SIGUSR2`, probado en Ghostty 1.3.1; si tu versión no lo soporta, usá `ctrl+shift+,`). Reiniciá Neovim para aplicar el tema ahí. Las demás opciones de `config.ghostty` se conservan; solo se reemplaza la línea `theme =`.
 
-El script copia `lua/themes/<nombre>.lua` a `lua/plugins/theme.lua` y escribe la línea `theme = ...` en `~/.config/ghostty/config.ghostty`. Kanagawa Dragon y Kanso usan los temas que trae Ghostty; Ash, Last Horizon, Ryu y Solitude usan los archivos de `extras/ghostty/themes/`, generados con las mismas paletas que sus recetas de Neovim. zsh (o cualquier shell) toma los colores de la paleta de Ghostty, así que también cambia.
+El script copia `lua/themes/<nombre>.lua` a `lua/plugins/theme.lua` y escribe la línea `theme = ...` en `~/.config/ghostty/config.ghostty`. Kanagawa Dragon, Kanso, Vesper, Matte Black, Vague y Miasma usan los temas que trae Ghostty; Ash, Last Horizon, Ryu y Solitude usan los archivos de `extras/ghostty/themes/`, generados con las mismas paletas que sus recetas de Neovim. zsh (o cualquier shell) toma los colores de la paleta de Ghostty, así que también cambia.
+
+**Nautilus y apps GTK4/libadwaita:** el script también genera `~/.config/gtk-4.0/gtk.css` con los colores con nombre de libadwaita (`window_bg_color`, `accent_bg_color`, `headerbar_bg_color`, etc.), derivados del mismo tema de Ghostty: fondo, texto, rojo/verde/amarillo de la paleta y el color 4 como acento (Vesper usa su naranja, el color 11; se cambia en `gtk_accent_index_for()`). Afecta a todas las apps GTK4/libadwaita (Nautilus, Configuración, Editor de texto, etc.), no a apps GTK3, navegadores ni la barra de GNOME. Si Nautilus está abierto, el script lo cierra con `nautilus -q`; las demás apps toman los colores al reabrirlas. Si ya tenías un `gtk.css` propio, se guarda una copia `gtk.css.bak-<fecha>` antes del primer reemplazo. Para volver a los colores del sistema: `rm ~/.config/gtk-4.0/gtk.css`.
 
 Cada cambio de tema modifica `lua/plugins/theme.lua`; hacé commit si querés que la próxima máquina arranque con ese tema.
 
